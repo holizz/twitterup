@@ -14,6 +14,8 @@
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 
+# Twitterup: Authenticationless backup of your tweets from Twitter.
+
 %w[rubygems hpricot open-uri net/http].each {|r| require r}
 
 class Twiterup
@@ -39,12 +41,8 @@ class Twiterup
 
   def saveid!(i)
     tweet = open(STATUS%i).read
-    if tweet.length==0
-      raise Exception, 'oops WTF?'
-    else
-      open(file(i), 'w+') do |f|
-        f.write(tweet)
-      end
+    open(file(i), 'w+') do |f|
+      f.write(tweet)
     end
   end
 
@@ -67,16 +65,21 @@ class Twiterup
     end
   end
 
-  def backup
+  def backup(safe=true)
+    unless File.exist?(@dir) and File.directory?(@dir)
+      raise Exception, "please create #{@dir} manually"
+    end
     iterids do |i|
-      saveid(i)
+      if safe
+        saveid(i)
+      else
+        saveid!(i)
+      end
     end
   end
 
   def backup!
-    iterids do |i|
-      saveid!(i)
-    end
+    backup(safe=false)
   end
 end
 
@@ -85,6 +88,18 @@ if __FILE__ == $0
     puts 'Usage: ruby twiterup.rb username directory'
     exit
   end
+
   t = Twiterup.new(ARGV[0], ARGV[1])
-  t.backup
+
+  begin
+    t.backup
+  rescue OpenURI::HTTPError => exception
+    if exception.to_s == '400 Bad Request'
+      puts "You've reached Twitter's hourly limit!"
+      puts "I suggest running this as a cron job."
+      exit
+    else
+      raise exception
+    end
+  end
 end
