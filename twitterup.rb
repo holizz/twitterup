@@ -82,7 +82,7 @@ end
 
 if __FILE__ == $0
   if ARGV.length == 0
-    puts 'Usage: twiterup username directory'
+    puts 'Usage: ruby twiterup.rb username directory'
     exit
   end
   t = Twiterup.new(ARGV[0], ARGV[1])
