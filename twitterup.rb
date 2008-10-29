@@ -16,7 +16,7 @@
 
 %w[rubygems hpricot open-uri net/http].each {|r| require r}
 
-class Twitup
+class Twiterup
   PAGE = "http://twitter.com/%s?page=%d"
   STATUS = 'http://twitter.com/statuses/show/%d.xml'
 
@@ -81,6 +81,10 @@ class Twitup
 end
 
 if __FILE__ == $0
-  t = Twitup.new(ARGV[0], ARGV[1])
+  if ARGV.length == 0
+    puts 'Usage: twiterup username directory'
+    exit
+  end
+  t = Twiterup.new(ARGV[0], ARGV[1])
   t.backup
 end
