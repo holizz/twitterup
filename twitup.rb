@@ -14,35 +14,53 @@
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 
-%w[rubygems hpricot open-uri].each {|r| require r}
+%w[rubygems hpricot open-uri net/http].each {|r| require r}
 
-user = 'holizz'
+$user = 'holizz'
 
-a = "http://twitter.com/#{user}?page=%d"
-b = 'http://twitter.com/statuses/show/%d.xml'
+a = "http://twitter.com/#{$user}?page=%d"
+$b = 'http://twitter.com/statuses/show/%d.xml'
 
-ids = []
-n = 1
-stop = false
-
-until stop do
-  stop = true
-  (Hpricot(open(a%n))/'a.entry-date').each do |c|
-    i = c['href'].match(/\/(\d+)$/)[1].to_i
-    unless ids.include? i
-      ids << i
-      stop = false
+def proxies
+  p = []
+  h = Hpricot(open('http://hidemyass.com/free_proxy_lists.php'))
+  for tr in ((h/'table')[1]/'tr')[1..-1]
+    if (tr/'td').length == 5
+      p << [(tr/'td')[0].inner_html.strip,(tr/'td')[1].inner_html.strip]
     end
   end
-  n+=1
+  p
 end
 
-Dir::mkdir user rescue nil
-ret = 0
-for i in ids do
-  open("#{user}/#{i}.xml", 'w+') do |f|
-    until ret==nil do
-      ret = f.write(open(b%i).read) rescue nil
+def proxify
+  p = proxies[0]
+  Net::HTTP.Proxy(p[0],p[1]) do
+    yield
+  end
+end
+
+def saveid(i)
+  proxify do
+    open("#{$user}/#{i}.xml", 'w+') do |f|
+      f.write(open(b%i).read)
     end
+  end
+end
+
+if __FILE__ == $0
+  ids = []
+  n = 1
+  stop = false
+
+  until stop do
+    stop = true
+    (Hpricot(open(a%n))/'a.entry-date').each do |c|
+      i = c['href'].match(/\/(\d+)$/)[1].to_i
+      unless ids.include? i
+        saveid i
+        stop = false
+      end
+    end
+    n+=1
   end
 end
