@@ -16,51 +16,71 @@
 
 %w[rubygems hpricot open-uri net/http].each {|r| require r}
 
-$user = 'holizz'
+class Twitup
+  PAGE = "http://twitter.com/%s?page=%d"
+  STATUS = 'http://twitter.com/statuses/show/%d.xml'
 
-a = "http://twitter.com/#{$user}?page=%d"
-$b = 'http://twitter.com/statuses/show/%d.xml'
+  def initialize(user,dir=nil)
+    @user = user
+    @dir = dir ? dir : user
+  end
 
-def proxies
-  p = []
-  h = Hpricot(open('http://hidemyass.com/free_proxy_lists.php'))
-  for tr in ((h/'table')[1]/'tr')[1..-1]
-    if (tr/'td').length == 5
-      p << [(tr/'td')[0].inner_html.strip,(tr/'td')[1].inner_html.strip]
+  def page(n)
+    PAGE % [@user,n]
+  end
+
+  def file(i)
+    "#{@dir}/#{i}.xml"
+  end
+
+  def saveid(i)
+    saveid!(i) unless File.exist?(file(i))
+  end
+
+  def saveid!(i)
+    tweet = open(STATUS%i).read
+    if tweet.length==0
+      raise Exception, 'oops WTF?'
+    else
+      open(file(i), 'w+') do |f|
+        f.write(tweet)
+      end
     end
   end
-  p
-end
 
-def proxify
-  p = proxies[0]
-  Net::HTTP.Proxy(p[0],p[1]) do
-    yield
+  def iterids
+    ids = []
+    n = 1
+    stop = false
+
+    until stop do
+      stop = true
+      (Hpricot(open(page(n)))/'a.entry-date').each do |a| # each perma-link
+        i = a['href'].match(/\/(\d+)$/)[1].to_i # .../status/#{i}
+        unless ids.include? i # latest tweet appears at top of each page
+          yield i
+          stop = false
+        end
+      end
+      n+=1
+      # if stop is still true here, we have found zero new tweets
+    end
   end
-end
 
-def saveid(i)
-  proxify do
-    open("#{$user}/#{i}.xml", 'w+') do |f|
-      f.write(open(b%i).read)
+  def backup
+    iterids do |i|
+      saveid(i)
+    end
+  end
+
+  def backup!
+    iterids do |i|
+      saveid!(i)
     end
   end
 end
 
 if __FILE__ == $0
-  ids = []
-  n = 1
-  stop = false
-
-  until stop do
-    stop = true
-    (Hpricot(open(a%n))/'a.entry-date').each do |c|
-      i = c['href'].match(/\/(\d+)$/)[1].to_i
-      unless ids.include? i
-        saveid i
-        stop = false
-      end
-    end
-    n+=1
-  end
+  t = Twitup.new(ARGV[0], ARGV[1])
+  t.backup
 end
