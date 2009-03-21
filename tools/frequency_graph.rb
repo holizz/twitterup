@@ -3,8 +3,7 @@
 %w[rubygems xml date set].each{|r|require r}
 
 def get_date(file)
-  parser = XML::Parser.new
-  parser.file = file
+  parser = XML::Parser.file file
   doc = parser.parse
   DateTime.parse(doc.find('/status/created_at')[0].content)
 end
