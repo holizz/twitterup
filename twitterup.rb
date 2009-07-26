@@ -21,14 +21,17 @@
 class Twiterup
   PAGE = "http://twitter.com/%s?page=%d"
   STATUS = 'http://twitter.com/statuses/show/%d.xml'
+  PAGE_LC = "http://%s/api/statuses/user_timeline/%s.xml?page=%d"
+  STATUS_LC = 'http://%s/api/statuses/show/%d.xml'
 
-  def initialize(user,dir=nil)
+  def initialize(user,dir=nil,laconica=nil)
     @user = user
     @dir = dir ? dir : user
+    @lc = laconica
   end
 
   def page(n)
-    PAGE % [@user,n]
+    @lc ? (PAGE_LC % [@lc, @user, n]) : (PAGE % [@user,n])
   end
 
   def file(i)
@@ -40,7 +43,8 @@ class Twiterup
   end
 
   def saveid!(i)
-    tweet = open(STATUS%i).read
+    uri = @lc ? (STATUS_LC % [@lc, i]) : (STATUS%i)
+    tweet = open(uri).read
     open(file(i), 'w+') do |f|
       f.write(tweet)
     end
@@ -53,8 +57,12 @@ class Twiterup
 
     until stop do
       stop = true
-      (Hpricot(open(page(n)))/'a.entry-date').each do |a| # each perma-link
-        i = a['href'].match(/\/(\d+)$/)[1].to_i # .../status/#{i}
+      (Hpricot(open(page(n)))/(@lc ? 'id' : 'a.entry-date')).each do |a| # each perma-link
+        if @lc
+          i = a.inner_html
+        else
+          i = a['href'].match(/\/(\d+)$/)[1].to_i # .../status/#{i}
+        end
         unless ids.include? i # latest tweet appears at top of each page
           yield i
           stop = false
@@ -85,11 +93,19 @@ end
 
 if __FILE__ == $0
   if ARGV.length == 0
-    puts 'Usage: ruby twiterup.rb username directory'
+    puts 'Usage: ruby twiterup.rb username directory [-l laconica-server]'
     exit
   end
 
-  t = Twiterup.new(ARGV[0], ARGV[1])
+  # This is overly simplistic - -l domain must be the last arguments
+  laconica = nil
+  if ARGV.length > 2
+    if ARGV[2] == '-l'
+      laconica = ARGV[3]
+    end
+  end
+
+  t = Twiterup.new(ARGV[0], ARGV[1], laconica=laconica)
 
   begin
     t.backup
