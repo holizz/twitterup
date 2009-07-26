@@ -9,19 +9,25 @@ def get_date(file)
 end
 
 if __FILE__ == $0
+  unless ARGV.length >= 1
+    puts "Args plx"
+    exit 1
+  end
   done = []
   s = ''
-  Dir['/store/backup/live/twitter/holizz/*.xml'].map{|f|
-    get_date f
-  }.sort.each{|d|
-    this_month = d.strftime('%Y-%m')
-    unless done.include? this_month
-      done << this_month
-      s << "\n" unless done.length==1
-      s << d.strftime('%Y-%m')+': -'
-    else
-      s << '-'
-    end
+  ARGV.each{|a|
+    Dir["#{a}*.xml"].map{|f|
+      get_date f
+    }.sort.each{|d|
+      this_month = d.strftime('%Y-%m')
+      unless done.include? this_month
+        done << this_month
+        s << "\n" unless done.length==1
+        s << d.strftime('%Y-%m')+': -'
+      else
+        s << '-'
+      end
+    }
+    puts s
   }
-  puts s
 end
