@@ -16,7 +16,7 @@ if __FILE__ == $0
   done = []
   s = ''
   ARGV.each{|a|
-    Dir["#{a}*.xml"].map{|f|
+    Dir["#{a}/*.xml"].map{|f|
       get_date f
     }.sort.each{|d|
       this_month = d.strftime('%Y-%m')
