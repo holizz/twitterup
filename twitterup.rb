@@ -57,7 +57,7 @@ class Twiterup
 
     until stop do
       stop = true
-      (Hpricot(open(page(n)))/(@lc ? 'id' : 'a.entry-date')).each do |a| # each perma-link
+      (Hpricot(open(page(n)))/(@lc ? 'status/id' : 'a.entry-date')).each do |a| # each perma-link
         if @lc
           i = a.inner_html
         else
