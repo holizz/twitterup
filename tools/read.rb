@@ -19,9 +19,7 @@ if __FILE__ == $0
     Dir["#{a}/*.xml"].sort.map{|f|
       get_tweet(f)
     }.sort_by{|tid,time,text|tid.to_i}.each{|tid,time,text|
-      puts "#{tid} #{time.strftime}"
-      puts text
-      puts
+      puts "#{tid} #{time.strftime} #{text}"
     }
   }
 end
