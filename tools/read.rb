@@ -15,11 +15,14 @@ if __FILE__ == $0
     puts "Args plx"
     exit 1
   end
-  ARGV.each{|a|
-    Dir["#{a}/*.xml"].sort.map{|f|
-      get_tweet(f)
-    }.sort_by{|tid,time,text|tid.to_i}.each{|tid,time,text|
-      puts "#{tid} #{time.strftime} #{text}"
+  begin
+    ARGV.each{|a|
+      Dir["#{a}/*.xml"].sort.map{|f|
+        get_tweet(f)
+      }.sort_by{|tid,time,text|tid.to_i}.each{|tid,time,text|
+        puts "#{tid} #{time.strftime} #{text}"
+      }
     }
-  }
+  rescue Errno::EPIPE
+  end
 end
